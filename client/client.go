@@ -2,18 +2,21 @@ package client
 
 import (
 	"net/http"
-	"net/url"
 )
 
-type ClientBuilder struct {
-	baseURL *url.URL
-	token   string
-	client  *http.Client
-}
-
 type Client struct {
-	Project ProjectClient
+	BaseURL string
+	Token   string
+	Client  *http.Client
 }
 
-func NewClient(endpoint) {
+func NewClient(baseURL string, token string, httpClient *http.Client) *Client {
+	if httpClient == nil {
+		httpClient = &http.Client{}
+	}
+	return &Client{
+		BaseURL: baseURL,
+		Token:   token,
+		Client:  httpClient,
+	}
 }
