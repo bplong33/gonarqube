@@ -9,8 +9,6 @@ import (
 	"github.com/bplong33/gonarqube/client"
 )
 
-//   "github.com/bplong33/gonarqube/client
-
 type ProjectClient struct {
 	Client *client.Client
 }
@@ -80,3 +78,7 @@ func (p *ProjectClient) GetProjects(params map[string]string) []Project {
 	}
 	return projects
 }
+
+// func (p *ProjectClient) {
+//
+// }
