@@ -49,7 +49,7 @@ func (c *Client) ResolveGetRequest() []byte {
 	return body
 }
 
-func (c *Client) ResolvePostRequest() int {
+func (c *Client) ResolvePostRequest() (int, string) {
 	req := c.CreateRequest("POST", map[string]string{})
 
 	resp, err := c.Client.Do(req)
@@ -64,5 +64,5 @@ func (c *Client) ResolvePostRequest() int {
 	// 	log.Panicln("Failed to read body:", err)
 	// }
 
-	return resp.StatusCode
+	return resp.StatusCode, resp.Status
 }
