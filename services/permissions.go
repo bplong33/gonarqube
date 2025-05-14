@@ -2,10 +2,11 @@ package services
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
+	"slices"
 
 	"github.com/bplong33/gonarqube/client"
 )
@@ -36,7 +37,7 @@ func NewPermissionClient(host *url.URL, token string) *PermissionClient {
 	}
 }
 
-func (p *PermissionClient) GetDefaultTemplate() []PermissionGroup {
+func (p *PermissionClient) GetDefaultTemplate() ([]PermissionGroup, error) {
 	const pageSize int = 100
 	page := 1
 	params := url.Values{}
@@ -55,7 +56,7 @@ func (p *PermissionClient) GetDefaultTemplate() []PermissionGroup {
 
 		data := &TemplateGroupResponse{}
 		if err := json.Unmarshal([]byte(body), data); err != nil {
-			log.Panicln("Error while reading response:", err)
+			return nil, fmt.Errorf("Error while reading response: %w", err)
 		}
 		templateGroups = append(templateGroups, data.Groups...)
 
@@ -65,7 +66,7 @@ func (p *PermissionClient) GetDefaultTemplate() []PermissionGroup {
 		page += 1
 	}
 
-	return templateGroups
+	return templateGroups, nil
 }
 
 // BulkApplyTemplate will apply a given template to all projects matching the filters.
@@ -84,11 +85,16 @@ func (p *PermissionClient) BulkApplyTemplate(params url.Values) (int, string) {
 
 // projects []Project, group string, permission string,
 
-// BulkRemovePermission removes the given permission a group on each
-// project that matches the searching parameters
-func (p *PermissionClient) BulkRemovePermission(
-	group string, permission string, visibility string, projQuery string,
+// BulkModifyPermission adds or removes the given permission a group on each
+// project that matches the searching parameters. Return project keys that
+// failed to be updated
+func (p *PermissionClient) BulkModifyPermission(
+	action string, group string, permission string, visibility string,
+	projQuery string, projFilter string,
 ) ([]Project, error) {
+	if !slices.Contains([]string{"add", "remove"}, action) {
+		return nil, errors.New("`action` should be either `add` or `remove`")
+	}
 	var failedChange []Project
 
 	// get projects matching query
@@ -101,11 +107,14 @@ func (p *PermissionClient) BulkRemovePermission(
 	if projQuery != "" {
 		getProjParams.Add("q", projQuery)
 	}
+	if projFilter != "" {
+		getProjParams.Add("projects", projFilter)
+	}
 
 	projectList := c.GetProjects(getProjParams)
 
 	// Build URI
-	p.URL.Path = "/api/permissions/remove_group"
+	p.URL.Path = fmt.Sprintf("/api/permissions/%s_group", action)
 	params := url.Values{}
 	params.Add("groupName", group)
 	params.Add("permission", permission)
@@ -116,12 +125,10 @@ func (p *PermissionClient) BulkRemovePermission(
 		params.Set("projectKey", proj.Key)
 		p.URL.RawQuery = params.Encode()
 
-		statusCode, status := p.ResolvePostRequest()
+		statusCode, _ := p.ResolvePostRequest()
 
 		if statusCode >= 300 {
 			failedChange = append(failedChange, proj)
-			log.Println("Status:", status)
-			// log.Println("Failed to modify permissions on project:", proj.Key)
 		} else {
 			numModified++
 		}
