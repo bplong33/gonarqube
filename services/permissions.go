@@ -37,6 +37,8 @@ func NewPermissionClient(host *url.URL, token string) *PermissionClient {
 	}
 }
 
+// GetDefaultTemplate will get the default template permission groups and
+// display their permissions
 func (p *PermissionClient) GetDefaultTemplate() ([]PermissionGroup, error) {
 	const pageSize int = 100
 	page := 1
@@ -71,19 +73,20 @@ func (p *PermissionClient) GetDefaultTemplate() ([]PermissionGroup, error) {
 
 // BulkApplyTemplate will apply a given template to all projects matching the filters.
 // These filters may include visibility, projects, or query (for project)
-func (p *PermissionClient) BulkApplyTemplate(params url.Values) (int, string) {
+func (p *PermissionClient) BulkApplyTemplate(params url.Values) (int, string, error) {
 	if !params.Has("templateName") {
 		params.Add("templateName", "Default template")
 	}
 	p.URL.Path = "/api/permissions/bulk_apply_template"
 	p.URL.RawQuery = params.Encode()
 
-	statusCode, status := p.ResolvePostRequest()
+	statusCode, status, err := p.ResolvePostRequest(nil, nil)
+	if err != nil {
+		return 0, "", err
+	}
 
-	return statusCode, status
+	return statusCode, status, nil
 }
-
-// projects []Project, group string, permission string,
 
 // BulkModifyPermission adds or removes the given permission a group on each
 // project that matches the searching parameters. Return project keys that
@@ -125,7 +128,10 @@ func (p *PermissionClient) BulkModifyPermission(
 		params.Set("projectKey", proj.Key)
 		p.URL.RawQuery = params.Encode()
 
-		statusCode, _ := p.ResolvePostRequest()
+		statusCode, _, err := p.ResolvePostRequest(nil, nil)
+		if err != nil {
+			return nil, err
+		}
 
 		if statusCode >= 300 {
 			failedChange = append(failedChange, proj)
