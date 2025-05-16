@@ -13,12 +13,21 @@ type GroupClient struct {
 }
 
 type Group struct {
-	name string
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Managed     bool   `json:"managed,omitempty"`
+	Default     bool   `json:"default,omitempty"`
 }
 
 type CreateGroupRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
+}
+
+type GroupResponse struct {
+	Groups []Group       `json:"groups"`
+	Page   client.Paging `json:"page"`
 }
 
 func NewGroupClient(host *url.URL, token string) *GroupClient {
@@ -33,7 +42,15 @@ func NewGroupClient(host *url.URL, token string) *GroupClient {
 
 // GetGroups returns all groups from within SonarQube with any supporting data
 func (g *GroupClient) GetGroups() []Group {
+	var pageSize int = 100
+	page := 1
+
+	g.URL.Path = "/api/v2/"
 	return nil
+}
+
+func (g *GroupClient) GetGroupDetails() *Group {
+	return &Group{}
 }
 
 // GetMembership returns all of the users who are members of a given group
