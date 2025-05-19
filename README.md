@@ -10,6 +10,7 @@ Sonarqube instances.
 
 ## ToDo
 
+- [ ] Remove all logs/panics, return errors instead
 - [ ] Add Validation for inputs
 - [ ] Convert client params to accept all parameters rather than assume
       that the `url.Values` params passed by the user are correct

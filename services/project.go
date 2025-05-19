@@ -67,7 +67,7 @@ func (p *ProjectClient) GetProjects(params url.Values) []Project {
 		if page*pageSize > data.Paging.Total {
 			break
 		}
-		page += 1
+		page++
 	}
 
 	return projects
